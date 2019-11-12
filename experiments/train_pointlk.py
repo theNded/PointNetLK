@@ -29,11 +29,11 @@ def options(argv=None):
                         metavar='BASENAME', help='output filename (prefix)') # the result: ${BASENAME}_model_best.pth
     parser.add_argument('-i', '--dataset-path', required=True, type=str,
                         metavar='PATH', help='path to the input dataset') # like '/path/to/ModelNet40'
-    parser.add_argument('-c', '--categoryfile', required=True, type=str,
+    parser.add_argument('-c', '--categoryfile', type=str,
                         metavar='PATH', help='path to the categories to be trained') # eg. './sampledata/modelnet40_half1.txt'
 
     # settings for input data
-    parser.add_argument('--dataset-type', default='modelnet', choices=['modelnet', 'shapenet2'],
+    parser.add_argument('--dataset-type', default='threedmatch', choices=['modelnet', 'shapenet2', 'threedmatch'],
                         metavar='DATASET', help='dataset type (default: modelnet)')
     parser.add_argument('--num-points', default=1024, type=int,
                         metavar='N', help='points in point-cloud (default: 1024)')
@@ -78,6 +78,10 @@ def options(argv=None):
     parser.add_argument('--device', default='cuda:0', type=str,
                         metavar='DEVICE', help='use CUDA if available')
 
+    # Additional
+    parser.add_argument('--voxel_size', type=float, default=0.05)
+    parser.add_argument('--rotation_range', type=float, default=360)
+
     args = parser.parse_args(argv)
     return args
 
@@ -106,9 +110,11 @@ def run(args, trainset, testset, action):
     checkpoint = None
     if args.resume:
         assert os.path.isfile(args.resume)
-        checkpoint = torch.load(args.resume)
-        args.start_epoch = checkpoint['epoch']
-        model.load_state_dict(checkpoint['model'])
+        checkpoint = torch.load(args.resume, map_location='cpu')
+        args.start_epoch = 0
+        # checkpoint['epoch']
+        # print(model.state_dict())
+        model.load_state_dict(checkpoint)
 
     # dataloader
     testloader = torch.utils.data.DataLoader(
@@ -127,8 +133,9 @@ def run(args, trainset, testset, action):
         optimizer = torch.optim.SGD(learnable_params, lr=0.1)
 
     if checkpoint is not None:
-        min_loss = checkpoint['min_loss']
-        optimizer.load_state_dict(checkpoint['optimizer'])
+        pass
+        # min_loss = checkpoint['min_loss']
+        # optimizer.load_state_dict(checkpoint['optimizer'])
 
     # training
     LOGGER.debug('train, begin')
@@ -320,6 +327,15 @@ def get_datasets(args):
         testset = ptlk.data.datasets.CADset4tracking(testdata,\
                         ptlk.data.transforms.RandomTransformSE3(args.mag, mag_randomly))
 
+    elif args.dataset_type == 'threedmatch':
+        trainset = ptlk.data.datasets.ThreeDMatchPairDataset03(
+            dataset_path=args.dataset_path, phase='train',
+            num_points=args.num_points, voxel_size=args.voxel_size,
+            rotation_range=args.rotation_range)
+        testset = ptlk.data.datasets.ThreeDMatchPairDataset03(
+            dataset_path=args.dataset_path, phase='val',
+            num_points=args.num_points, voxel_size=args.voxel_size,
+            rotation_range=args.rotation_range)
 
     return trainset, testset
 
