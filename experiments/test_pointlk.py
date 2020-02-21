@@ -25,16 +25,6 @@ LOGGER.addHandler(logging.NullHandler())
 def options(argv=None):
     parser = argparse.ArgumentParser(description='PointNet-LK')
 
-    # required.
-    parser.add_argument('-o', '--outfile', required=True, type=str,
-                        metavar='FILENAME', help='output filename (.csv)')
-    parser.add_argument('-i', '--dataset-path', required=True, type=str,
-                        metavar='PATH', help='path to the input dataset') # like '/path/to/ModelNet40'
-    parser.add_argument('-c', '--categoryfile', required=True, type=str,
-                        metavar='PATH', help='path to the categories to be tested') # eg. './sampledata/modelnet40_half1.txt'
-    parser.add_argument('-p', '--perturbations', required=True, type=str,
-                        metavar='PATH', help='path to the perturbation file') # see. generate_perturbations.py
-
     # settings for input data
     parser.add_argument('--dataset-type', default='modelnet', choices=['modelnet'],
                         metavar='DATASET', help='dataset type (default: modelnet)')
